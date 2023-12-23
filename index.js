@@ -1,27 +1,53 @@
-import { DataReportMode, IRDataType, IRSensitivity } from "./src/const.js";
-import WIIMote from "./src/wiimote.js"
+import {
+  DataReportMode,
+  EventReportBytes,
+  EventReportLookup,
+  IRDataType,
+  IRSensitivity,
+} from "./src/const.js";
+import { extensionHandler } from "./src/helpers.js";
+import WIIMote from "./src/wiimote.js";
 
 let requestButton = document.getElementById("request-hid-device");
 
-var wiimote = undefined;
+/**
+ * @type WIIMote
+ * Wii remote variable
+ */
+var wiiMote = undefined;
 
 function setButton(elementId, action) {
   document.getElementById(elementId).addEventListener("click", async () => {
-    action()
-  })  
+    action();
+  });
 }
-
 
 requestButton.addEventListener("click", async () => {
   let device;
   try {
     const devices = await navigator.hid.requestDevice({
-        filters: [{ vendorId: 0x057e }],
+      filters: [{ vendorId: 0x057e }],
     });
-    
-    device = devices[0];
-    wiimote = new WIIMote(device)
 
+    device = devices[0];
+    wiiMote = new WIIMote(device);
+
+    wiiMote.listenerEnabled = true;
+    wiiMote.ExtensionListener = (ext) => {
+      console.log("extension:", ext);
+      document.getElementById("extensionType").innerText = ext.name;
+
+      // Make sure to enable extension mode
+      wiiMote.setDataTracking(DataReportMode.CORE_BUTTONS_ACCEL_IR_EXTENSION);
+
+      if (ext.extensionId === "None" || ext.extensionId === "Error") {
+        // revert reading mode
+        wiiMote.setDataTracking(DataReportMode.CORE_BUTTONS_ACCEL_IR);
+        // return;
+      }
+
+      extensionHandler(ext, wiiMote);
+    };
   } catch (error) {
     console.log("An error occurred.", error);
   }
@@ -31,92 +57,133 @@ requestButton.addEventListener("click", async () => {
   } else {
     console.log(`HID: ${device.productName}`);
 
-    enableControls()
-    initCanvas()
-
+    enableControls();
+    initCanvas();
   }
 });
 
 function initButtons() {
-  setButton( "rumble",
-    () => wiimote.toggleRumble()
-  )
+  setButton("rumble", () => wiiMote.toggleRumble());
 
-  setButton( "irextended",
-    () => wiimote.initiateIR(IRDataType.EXTENDED)
-  )
+  setButton("irextended", () => wiiMote.initiateIR(IRDataType.EXTENDED));
 
-  setButton( "irbasic",
-    () => wiimote.initiateIR(IRDataType.BASIC)
-  )
+  setButton("irbasic", () => wiiMote.initiateIR(IRDataType.BASIC));
 
-  setButton( "irfull",
-    () => wiimote.initiateIR(IRDataType.FULL)
-  )
+  setButton("irfull", () => wiiMote.initiateIR(IRDataType.FULL));
 
-  setButton( "coreBtns",
-    () => wiimote.setDataTracking(DataReportMode.CORE_BUTTONS)
-  )
+  setButton("DRMcoreBtns", () => wiiMote.setDataTracking(DataReportMode.CORE_BUTTONS));
 
-  setButton( "coreBtnsACC",
-    () => wiimote.setDataTracking(DataReportMode.CORE_BUTTONS_AND_ACCEL)
-  )
+  setButton("DRMcoreBtnsACC", () => wiiMote.setDataTracking(DataReportMode.CORE_BUTTONS_AND_ACCEL));
 
-  setButton( "coreBtnsACCIR",
-    () => wiimote.setDataTracking(DataReportMode.CORE_BUTTONS_ACCEL_IR)
-  )
+  setButton("DRMcoreBtnsACCIR", () =>
+    wiiMote.setDataTracking(DataReportMode.CORE_BUTTONS_ACCEL_IR)
+  );
+
+  setButton("DRMcoreBtnsACCIREXT", () =>
+    wiiMote.setDataTracking(DataReportMode.CORE_BUTTONS_ACCEL_IR_EXTENSION)
+  );
+
+  setButton("DRMextensionOnly", () => wiiMote.setDataTracking(DataReportMode.ONLY_EXTENSION_BYTES));
+
+  setButton("statusReport", () => wiiMote.requestStatusInfo());
+  setButton("clearEvents", () => (document.getElementById("miscMessageListBox").innerHTML = ""));
+
+  setButton("getExtension", async () => {
+    const data = await wiiMote.getExtensionType();
+
+    console.log(data);
+
+    document.getElementById("extensionType").innerText = data.name;
+  });
+
+  // setButton("extModeNone", () => wiimote.setDataTracking(DataReportMode.CORE_BUTTONS_ACCEL_IR));
+
+  // setButton("extModeWMP", () => wiimote.setDataTracking(DataReportMode.CORE_BUTTONS_ACCEL_IR));
 
   // LED buttons
-  document.getElementById("led1").addEventListener("click", () => wiimote.toggleLed(0))
-  document.getElementById("led2").addEventListener("click", () => wiimote.toggleLed(1))
-  document.getElementById("led3").addEventListener("click", () => wiimote.toggleLed(2))
-  document.getElementById("led4").addEventListener("click", () => wiimote.toggleLed(3))
+  document.getElementById("led1").addEventListener("click", () => wiiMote.toggleLed(0));
+  document.getElementById("led2").addEventListener("click", () => wiiMote.toggleLed(1));
+  document.getElementById("led3").addEventListener("click", () => wiiMote.toggleLed(2));
+  document.getElementById("led4").addEventListener("click", () => wiiMote.toggleLed(3));
 }
 
-function initCanvas(){
-  var canvas = document.getElementById("IRcanvas")
-  let ctx = canvas.getContext("2d")
+function initCanvas() {
+  // var canvas = document.getElementById("IRcanvas");
+  // let ctx = canvas.getContext("2d");
 
-  wiimote.BtnListener = (buttons) => {
-    var buttonJSON = JSON.stringify(buttons, null, 2);
+  wiiMote.BtnListener = (buttons) => {
+    var buttonJSON = Object.keys(buttons)
+      .sort()
+      .map((m) =>
+        buttons[m] === true
+          ? `<span class="text-gray-300">${m}</span>`
+          : `<span class="text-gray-500">${m}</span>`
+      )
+      .join(" ");
 
-    if(document.getElementById('buttons').innerHTML != buttonJSON){
-      document.getElementById('buttons').innerHTML = buttonJSON
+    if (document.getElementById("buttons").innerHTML != buttonJSON) {
+      document.getElementById("buttons").innerHTML = buttonJSON;
     }
-  }
+  };
 
-  wiimote.AccListener = (x,y,z) => {
-    document.getElementById('accX').innerHTML = x
-    document.getElementById('accY').innerHTML = y
-    document.getElementById('accZ').innerHTML = z
-  }
+  wiiMote.AccListener = (x, y, z) => {
+    document.getElementById("accX").innerHTML = x;
+    document.getElementById("accY").innerHTML = y;
+    document.getElementById("accZ").innerHTML = z;
+  };
 
+  wiiMote.MiscListener = (ev, data, extra) => {
+    const eventId = ev.reportId;
 
-  wiimote.IrListener = (pos) => {
-    if(pos.length < 1){
-      return
-    }
+    const eventLookupString =
+      `<span class="text-gray-400 text-light">${EventReportBytes[eventId]}</span>\n` || "";
 
-    ctx.fillStyle = 'black'
-    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-    ctx.fillStyle = 'white'
+    const message = document.createElement("div");
 
-    pos.forEach( cPos => {
-      if(cPos != undefined){
-        ctx.fillRect(cPos.x/(1024/ctx.canvas.width), ctx.canvas.height-(cPos.y/(760/ctx.canvas.height)), 5, 5)
-      }
-    })
+    message.classList.add("p-2", "mb-2", "bg-gray-500", "dark:bg-gray-800", "rounded-lg");
 
-    document.getElementById("IRdebug").innerHTML = JSON.stringify(pos, null, true)
-    
-  }
+    const a = Array.from(data);
 
+    message.innerHTML = `
+    <span><span class="text-xl font-mono text-gray-400">0x${eventId
+      .toString(16)
+      .padStart(2, "0")}</span> ${EventReportLookup[eventId]}</span>
+    <div class="font-mono py-1 px-1 whitespace-pre-wrap">${eventLookupString}${a
+      .map((o) => o.toString(16).padStart(2, "0"))
+      .join(" ")}</div>
+    <ul class="list-disc px-6">${extra.map((e) => `<li>${e}</li>`).join("")}</ul>
+    `;
+
+    document.getElementById("miscMessageListBox").appendChild(message);
+  };
+
+  // wiimote.IrListener = (pos) => {
+  //   if (pos.length < 1) {
+  //     return;
+  //   }
+
+  //   ctx.fillStyle = "black";
+  //   ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  //   ctx.fillStyle = "white";
+
+  //   pos.forEach((cPos) => {
+  //     if (cPos != undefined) {
+  //       ctx.fillRect(
+  //         cPos.x / (1024 / ctx.canvas.width),
+  //         ctx.canvas.height - cPos.y / (760 / ctx.canvas.height),
+  //         5,
+  //         5
+  //       );
+  //     }
+  //   });
+
+  //   document.getElementById("IRdebug").innerHTML = JSON.stringify(pos, null, true);
+  // };
 }
 
-function enableControls(){
-  document.getElementById("Controls").classList.remove("hidden")
-  document.getElementById("instructions").classList.add("hidden")
+function enableControls() {
+  document.getElementById("Controls").classList.remove("hidden");
+  document.getElementById("instructions").classList.add("hidden");
 }
 
-
-initButtons()
+initButtons();
