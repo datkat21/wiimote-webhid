@@ -1,26 +1,26 @@
 # Wiimote WebHID API Library
+
 A Wiimote implementation using WebHID.
 
-![IR Canvas demo using the example bellow](demo.gif)
+## Fork Details (disclaimer)
 
-*IR Canvas demo using the example bellow*
+This is a fork of the Wiimote-WebHID project by picchikevin. I have made a few modifications to it.
 
 
-You can try a demo of this library here:
+You can try a demo here:
 
-**Demo available:** [https://kevinpicchi.github.io/wiimote-webhid](https://picchikevin.github.io/wiimote-webhid/)
-
+**Demo available:** [https://datkat21.github.io/wiimote-webhid](https://datkat21.github.io/wiimote-webhid/)
 
 ## Introduction
 
-The simple goal of this project is to make the original Wiimote (Nitendo RVL-CNT-01) work on the Web.
+The simple goal of this project is to make the original Wiimote (Nintendo RVL-CNT-01) work on the Web.
 This is done by leveraging the power of [WebHID](https://wicg.github.io/webhid/).
 
 Got a question? Feel free to raise an issue or reach out on twitter: [@KevinPicchi](https://twitter.com/KevinPicchi)
 
 
 ## Contributions:
-**I'd love you to contribute to the project** so that we might even make make it **better** together!
+**I'd love you to contribute to the project** so that we might even make make it better together!
 
 So please do fire your issues and pull request my way!
 
