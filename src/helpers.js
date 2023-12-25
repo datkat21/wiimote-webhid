@@ -64,57 +64,16 @@ export function readBits(byte) {
   return bits.map((b) => (b === true ? 1 : 0));
 }
 
-import { ExtensionTypes } from "./const.js";
-
-/**
- * @param {ExtensionTypes} ext
- * @param {WIIMote} wiiMote
- */
-export function extensionHandler(ext, wiiMote) {
-  if (!ext.extensionId in ExtensionTypes) {
-    return console.log("no extension");
-  }
-
-  switch (ext.extensionId) {
-    // Nunchuk
-    // case 0xa4 + 0x20:
-    // Classic Controller
-    case 0xa4 + 0x20 + 0x01 + 0x01:
-      document.getElementById("extensionRender").innerHTML = /*html*/ `
-      <div>
-      L Stick: <span id="LStickX">X</span>, <span id="LStickY">Y</span><br>
-      R Stick: <span id="RStickX">X</span>, <span id="RStickY">Y</span><br>
-      Buttons:
-      <span id="ButtonA">A</span>
-      <span id="ButtonB">B</span>
-      <span id="ButtonX">X</span>
-      <span id="ButtonY">Y</span>
-      <span id="ButtonL">L</span>
-      <span id="ButtonR">R</span>
-      <span id="ButtonZL">ZL</span>
-      <span id="ButtonZR">ZR</span>
-        <span id="ButtonMinus">Minus</span>
-        <span id="ButtonPlus">Plus</span>
-        <span id="ButtonHome">Home</span>
-        <span id="ButtonDUp">DpadUp</span>
-        <span id="ButtonDLeft">DpadLeft</span>
-        <span id="ButtonDDown">DpadDown</span>
-        <span id="ButtonDRight">DpadRight</span>
-        </div>
-        `;
-      break;
-    default:
-      document.getElementById(
-        "extensionRender"
-      ).innerHTML = `No supported Extension Renderer for ${ext.name}.`;
-      break;
-  }
-}
-
-// export function turnOnBit(number, bitPosition) {
-//   return number | (1 << bitPosition);
-// }
-
-// export function turnOffBit(number, bitPosition) {
-//   return number & ~(1 << bitPosition);
-// }
+export const friendlyBitsRender = (bits) => bits.map((b) => b).join(" ");
+export const friendlyBytesRender = (...bytes) =>
+  bytes.map((b, i) => `<span class="text-gray-600">${i}</span> ${friendlyBitsRender(b)}`).join("\n");
+export const friendlyBitParse = (bits, start, end) =>
+  parseInt(
+    bits
+      .slice(start, end)
+      .map((bit) => (bit ? "1" : "0"))
+      .join(""),
+    2
+  );
+export const hexEncode = (num) => num.toString(16).padStart(2, "0");
+export const hexEncode0x = (num) => `0x${num.toString(16).padStart(2, "0")}`;

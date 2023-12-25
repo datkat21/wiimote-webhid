@@ -23,6 +23,11 @@
         font-family: "Cascadia Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
           "Liberation Mono", "Courier New", monospace;
       }
+
+      #miscMessageListBox {
+        overflow: auto;
+        height: 600px;
+      }
     </style>
   </head>
   <body class="bg-gray-200 dark:bg-gray-900 dark:text-white">
@@ -136,6 +141,7 @@
         </div>
 
         <h3 class="my-4 font-big text-2xl">Data mode</h3>
+        <span>Currently active mode: <span class="font-mono text-xl text-gray-400" id="lastActiveMode"></span> (<span id="lastActiveModeName"></span>)</span>
         <h4 class="mb-2 font-big text-xl">Basic</h4>
         <div class="flex flex-wrap">
           <button

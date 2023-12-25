@@ -6,6 +6,11 @@ A Wiimote implementation using WebHID.
 
 This is a fork of the Wiimote-WebHID project by picchikevin. I have made a few modifications to it.
 
+## Notes
+
+I have been working on adding extensions support and I am currently unable to get Wii MotionPlus working correctly.
+
+## Demo
 
 You can try a demo here:
 
@@ -35,3 +40,4 @@ Thanks again to anyone who contributed to it! https://wiibrew.org/wiki/Wiimote
 - [Experimental Wiimote connection through HID](https://github.com/natel97/wiimote-chrome) by @natel97
 
 Feel free to create a PR and list your implementation here.
+

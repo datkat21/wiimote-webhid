@@ -1,3 +1,5 @@
+import { friendlyBitParse, friendlyBitsRender, hexEncode, readBits } from "./helpers.js";
+
 export const ReportMode = {
   RUMBLE: 0x10,
   PLAYER_LED: 0x11,
@@ -35,31 +37,14 @@ export const EventReportLookup = {
 };
 
 export const EventReportBytes = {
+  0x17: "MM FF FF FF SS SS",
   0x20: "BB BB LF 00 00 VV",
   0x21: "BB BB SE AA AA DD DD DD DD DD DD DD DD DD DD DD DD DD DD DD DD",
 };
 
-export const ExtensionTypes = {
-  None: {
-    name: "None",
-    extensionId: "None",
-    isExtension: false,
-  },
-  Error: {
-    name: "Error reading extension",
-    extensionId: "Error",
-    isExtension: false,
-  },
-  [0x00 + 0x00 + 0xa4 + 0x20 + 0x00 + 0x00]: {
-    name: "Nunchuk",
-    extensionId: 0xa4 + 0x20 + 0x00 + 0x00,
-    isExtension: true,
-  },
-  [0x00 + 0x00 + 0xa4 + 0x20 + 0x01 + 0x01]: {
-    name: "Classic Controller",
-    extensionId: 0xa4 + 0x20 + 0x01 + 0x01,
-    isExtension: true,
-  },
+export const BitMasks = {
+  HIGH_NYBBLE: 0xf0,
+  LOW_NYBBLE: 0x0f,
 };
 
 export const DataReportMode = {
@@ -105,6 +90,13 @@ export const RegisterType = {
 
 export const RegisterLookup = {
   EXTENSION_TYPE: 0xa400fa,
+  WII_MOTION_PLUS: 0xa600fa,
+  WII_MOTION_PLUS_READ: 0xa600fe,
+  WII_MOTION_PLUS_SET: 0xa600f0,
+};
+
+export const RegisterWriteValues = {
+  WII_MOTION_PLUS_SET: 0x55, // to go with RL['WII_MOTION_PLUS_SET]
 };
 
 export const IRSensitivity = {

@@ -5,7 +5,7 @@ import {
   IRDataType,
   IRSensitivity,
 } from "./src/const.js";
-import { extensionHandler } from "./src/helpers.js";
+import { extensionHtmlSetup } from "./src/extension.js";
 import WIIMote from "./src/wiimote.js";
 
 let requestButton = document.getElementById("request-hid-device");
@@ -32,13 +32,29 @@ requestButton.addEventListener("click", async () => {
     device = devices[0];
     wiiMote = new WIIMote(device);
 
+    window.wm = wiiMote;
+
+    // MotionPlus check support
+    // setInterval(() => wiiMote.checkWiiMotionPlus(), 8000);
+
     wiiMote.listenerEnabled = true;
     wiiMote.ExtensionListener = (ext) => {
       console.log("extension:", ext);
       document.getElementById("extensionType").innerText = ext.name;
 
       // Make sure to enable extension mode
-      wiiMote.setDataTracking(DataReportMode.CORE_BUTTONS_ACCEL_IR_EXTENSION);
+      if (ext["dataTrackingMode"] !== undefined) {
+        wiiMote.setDataTracking(ext["dataTrackingMode"]);
+      } else {
+        // Use default extension tracking
+        wiiMote.setDataTracking(DataReportMode.CORE_BUTTONS_ACCEL_IR_EXTENSION);
+      }
+
+      if (ext["extHandler"] !== undefined) {
+        wiiMote.EXTDecoder = ext.extHandler;
+      } else {
+        wiiMote.EXTDecoder = null;
+      }
 
       if (ext.extensionId === "None" || ext.extensionId === "Error") {
         // revert reading mode
@@ -46,7 +62,7 @@ requestButton.addEventListener("click", async () => {
         // return;
       }
 
-      extensionHandler(ext, wiiMote);
+      extensionHtmlSetup(ext, wiiMote);
     };
   } catch (error) {
     console.log("An error occurred.", error);

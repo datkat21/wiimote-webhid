@@ -4,6 +4,8 @@ import {
   debug,
   getBitInByte,
   readBits /*turnOnBit, turnOffBit*/,
+  hexEncode0x,
+  hexEncode,
 } from "./helpers.js";
 
 import {
@@ -18,8 +20,12 @@ import {
   IRSensitivity,
   InputReport,
   RegisterLookup,
-  ExtensionTypes,
+  EventReportBytes,
+  EventReportLookup,
+  BitMasks,
+  RegisterWriteValues,
 } from "./const.js";
+import { ExtensionTypes } from "./extension.js";
 
 export default class WIIMote {
   constructor(device) {
@@ -148,30 +154,46 @@ export default class WIIMote {
     return await this.sendReport(ReportMode.MEM_REG_WRITE, total);
   }
 
+  /**
+   *
+   * @param {Number} offset addr value to read
+   * @param {Number} size num of bytes to read
+   * @returns {String} BB BB SE AA AA DD DD DD DD DD DD DD DD DD DD DD DD DD DD DD DD
+   */
   readRegister(offset, size) {
-    let offsetArr = toBigEndian(offset, 3);
-    // ensure the rumble bit isn't set
-    // offsetArr[0] = offsetArr[0] & 0x7f;
-    let sizeArr = toBigEndian(size, 2);
+    return new Promise((resolve, reject) => {
+      let offsetArr = toBigEndian(offset, 3);
+      // ensure the rumble bit isn't set
+      // offsetArr[0] = offsetArr[0] & 0x7f;
+      let sizeArr = toBigEndian(size, 2);
 
-    var total = [RegisterType.CONTROL, ...offsetArr, ...sizeArr];
-    // expected bytes
-    // 17 MM FF FF FF SS SS
+      var total = [RegisterType.CONTROL, ...offsetArr, ...sizeArr];
+      // expected bytes
+      // 17 MM FF FF FF SS SS
 
-    // Disable Rumble
-    // total[0] = turnOffBit(total[0], 0);
-    //
-    // total[0] = turnOffBit(total[0], 0);
+      // Disable Rumble
+      // total[0] = turnOffBit(total[0], 0);
+      //
+      // total[0] = turnOffBit(total[0], 0);
 
-    console.log(
-      `17 MM FF FF FF SS SS\n${ReportMode.MEM_REG_READ.toString(16)} ${total
-        .map((u) => u.toString(16).padStart(2, "0"))
-        .join(" ")}`
-    );
+      const dt = this.currentDataTrackingMode;
 
-    console.log(readBits(offsetArr[0]));
+      console.log(
+        `${hexEncode(ReportMode.MEM_REG_READ)} ${
+          EventReportBytes[ReportMode.MEM_REG_READ]
+        }\n${hexEncode(ReportMode.MEM_REG_READ)} ${total.map((u) => hexEncode(u)).join(" ")}`
+      );
 
-    return this.sendReport(ReportMode.MEM_REG_READ, total);
+      console.log(readBits(offsetArr[0]));
+
+      this.sendReport(ReportMode.MEM_REG_READ, total);
+
+      this.ReadListener = (ev, data) => {
+        this.ReadListener = null;
+        resolve([ev, data]);
+        this.setDataTracking(dt);
+      };
+    });
   }
   // readRegister(offset, size) {
   //   return this.sendReport(MiscDataTypes.READ_MEMORY_AND_REGISTERS /*0x17*/, /*...*/);
@@ -184,46 +206,77 @@ export default class WIIMote {
     await this.writeRegister(RegisterType.CONTROL, 0xa400fb, [0x00]);
   }
 
-  getExtensionType() {
-    return new Promise(async (resolve, reject) => {
-      this.ReadListener = (ev, data) => {
-        // ev, data;
-        console.log("got data", ev, data);
-        this.ReadListener = null;
+  async checkWiiMotionPlus() {
+    let [ev, data] = await this.readRegister(RegisterLookup.WII_MOTION_PLUS_READ, 0x06);
 
-        if (data[2] === 0xf7) {
-          // error, ignore
-          return resolve(ExtensionTypes["None"]);
-        }
+    const se = data[2] & BitMasks.LOW_NYBBLE;
 
-        if (
-          data[5] === 0xff &&
-          data[6] === 0xff &&
-          data[7] === 0xff &&
-          data[8] === 0xff &&
-          data[9] === 0xff &&
-          data[10] === 0xff
-        ) {
-          return resolve(ExtensionTypes["Error"]);
-        }
+    if (se === 7) {
+      // error reading data... maybe extension is already connected?
+      await this.writeRegister(
+        RegisterType.CONTROL, // 0x04
+        RegisterLookup.WII_MOTION_PLUS_SET, // 0xa600f0
+        [RegisterWriteValues.WII_MOTION_PLUS_SET] // 0x55
+      );
+    }
 
-        let num = 0;
+    // set active extension
+    await this.writeRegister(
+      RegisterType.CONTROL, // 0x04
+      RegisterLookup.WII_MOTION_PLUS_READ, // 0xa600fe
+      [0x04] // activate
+    );
 
-        const x = Array.from(data.slice(5, 11));
+    [ev, data] = await this.readRegister(RegisterLookup.WII_MOTION_PLUS_READ, 0x06);
 
-        x.forEach((x) => {
-          num += x;
-        });
+    console.log(
+      `check Wii motion plus:\n${EventReportBytes[0x21]}\n` +
+        Array.from(data)
+          .map((d) => hexEncode(d))
+          .join(" ")
+    );
+  }
 
-        const y = ExtensionTypes[num];
+  async getExtensionType() {
+    await this.prepareExtension();
+    const [ev, data] = await this.readRegister(RegisterLookup.EXTENSION_TYPE, 0x06);
 
-        return resolve(y);
-      };
+    console.log("got data", ev, data);
+    this.ReadListener = null;
 
-      this.prepareExtension().then(() => {
-        this.readRegister(RegisterLookup.EXTENSION_TYPE, 0x06);
-      });
+    if (data[2] === 0xf7) {
+      // error, ignore
+      return ExtensionTypes["None"];
+    }
+
+    if (
+      data[5] === 0xff &&
+      data[6] === 0xff &&
+      data[7] === 0xff &&
+      data[8] === 0xff &&
+      data[9] === 0xff &&
+      data[10] === 0xff
+    ) {
+      return ExtensionTypes["Error"];
+    }
+
+    let num = 0;
+
+    const x = Array.from(data.slice(5, 11));
+
+    x.forEach((x) => {
+      num += x;
     });
+
+    const y = ExtensionTypes[num];
+
+    if (y === undefined) {
+      const ex = JSON.parse(JSON.stringify(ExtensionTypes["Unknown"]));
+      ex.name = `Unknown (${x.map((d) => hexEncode(d)).join(" ")})`;
+      return ex;
+    }
+
+    return y;
   }
 
   currentDataTrackingMode;
@@ -231,6 +284,9 @@ export default class WIIMote {
   // Set the Data output type
   setDataTracking(dataMode = DataReportMode.CORE_BUTTONS_ACCEL_IR) {
     this.currentDataTrackingMode = dataMode;
+    console.log(`set data tracking mode to ${hexEncode0x(dataMode)}`);
+    document.getElementById("lastActiveMode").innerText = hexEncode0x(dataMode);
+    document.getElementById("lastActiveModeName").innerText = EventReportLookup[dataMode];
     return this.sendReport(ReportMode.DATA_REPORTING, [0x00, dataMode]);
   }
 
@@ -315,15 +371,13 @@ export default class WIIMote {
     if (event.reportId == InputReport.STATUS) {
       console.log("Status report:", data);
       document.getElementById("statusReportInfo").innerText = Array.from(data)
-        .map((o) => o.toString(16).padStart(2, "0"))
+        .map((o) => hexEncode(o))
         .join(" ");
       this.setDataTracking(DataReportMode.CORE_BUTTONS_ACCEL_IR);
       //   //   this.parseStatusReportInfo(data);
     }
 
-    document.getElementById("lastReportId").innerText = `0x${event.reportId
-      .toString(16)
-      .padStart(2, "0")}`;
+    document.getElementById("lastReportId").innerText = hexEncode0x(event.reportId);
 
     let byte1,
       byte2,
@@ -347,7 +401,22 @@ export default class WIIMote {
       ext3,
       ext4,
       ext5,
-      ext6;
+      ext6,
+      ext7,
+      ext8,
+      ext9,
+      ext10,
+      ext11,
+      ext12,
+      ext13,
+      ext14,
+      ext15,
+      ext16,
+      ext17,
+      ext18,
+      ext19,
+      ext20,
+      ext21;
 
     switch (this.currentDataTrackingMode) {
       case DataReportMode.CORE_BUTTONS_ACCEL_IR:
@@ -412,6 +481,54 @@ export default class WIIMote {
         }
         break;
       case DataReportMode.ONLY_EXTENSION_BYTES:
+        [
+          ext1,
+          ext2,
+          ext3,
+          ext4,
+          ext5,
+          ext6,
+          ext7, // Extension
+          ext8,
+          ext9,
+          ext10,
+          ext11,
+          ext12,
+          ext13,
+          ext14,
+          ext15,
+          ext16,
+          ext17,
+          ext18,
+          ext19,
+          ext20,
+          ext21,
+        ] = data;
+        if (this.EXTDecoder) {
+          this.EXTDecoder([
+            ext1,
+            ext2,
+            ext3,
+            ext4,
+            ext5,
+            ext6,
+            ext7,
+            ext8,
+            ext9,
+            ext10,
+            ext11,
+            ext12,
+            ext13,
+            ext14,
+            ext15,
+            ext16,
+            ext17,
+            ext18,
+            ext19,
+            ext20,
+            ext21,
+          ]);
+        }
         break;
       default:
         console.log(`no handler for "${this.currentDataTrackingMode}"`);
@@ -444,18 +561,27 @@ export default class WIIMote {
           if (isExtensionConnected) {
             extra.push("Extension controller connected");
             const ext = await this.getExtensionType();
-            this.currentExtensionId = ext.extensionId;
+            console.log("extension:", ext);
+            this.currentExtensionId = ext?.extensionId;
 
-            if (ext.extensionId !== "Error") this.ExtensionListener && this.ExtensionListener(ext);
-            else {
+            if (ext !== undefined) {
+              if (ext.extensionId !== "Error")
+                this.ExtensionListener && this.ExtensionListener(ext);
+            } else {
               console.log("%cBeginning error check loop", "color:#0decaf");
               let x = setInterval(async () => {
                 let extension = await this.getExtensionType();
                 console.log("%cChecking...", "color:#0decaf");
-                if (extension.extensionId !== "Error") {
-                  console.log(`%cSolved! It's a ${extension.name}`, "color:#0decaf");
+
+                if (extension !== undefined) {
+                  if (extension.extensionId !== "Error") {
+                    console.log(`%cSolved! It's a ${extension.name}`, "color:#0decaf");
+                    clearInterval(x);
+                    this.ExtensionListener && this.ExtensionListener(extension);
+                  }
+                } else {
+                  this.ExtensionListener && this.ExtensionListener(ExtensionTypes["Unknown"]);
                   clearInterval(x);
-                  this.ExtensionListener && this.ExtensionListener(extension);
                 }
               }, 250);
             }
@@ -489,9 +615,11 @@ export default class WIIMote {
             extra.push("LED 4 enabled");
           }
 
-          extra.push(`Battery: ${((batteryLevel / 255) * 100).toFixed(2)}%`);
+          extra.push(`Battery: ${((1 - batteryLevel / 255) * 100).toFixed(2)}%`);
 
           this.MiscListener(event, data, extra);
+
+          // this.checkWiiMotionPlus();
         }
         break;
       case InputReport.READ_MEM_DATA:
@@ -507,9 +635,7 @@ export default class WIIMote {
     if (this.listenerEnabled) {
       const a = Array.from(data);
 
-      document.getElementById("DPdebugHex").innerText = a
-        .map((o) => o.toString(16).padStart(2, "0"))
-        .join(" ");
+      document.getElementById("DPdebugHex").innerText = a.map((o) => hexEncode(o)).join(" ");
     }
   }
 }
