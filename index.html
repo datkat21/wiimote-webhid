@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Wiimote for the Web</title>
-    <!-- <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet" />
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wiimote for the Web</title>
+  <!-- <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.0.2/base.css"
@@ -17,190 +18,153 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.0.2/utilities.css"
     /> -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      .font-mono {
-        font-family: "Cascadia Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-          "Liberation Mono", "Courier New", monospace;
-      }
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .font-mono {
+      font-family: "Cascadia Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+    }
 
-      #miscMessageListBox {
-        overflow: auto;
-        height: 600px;
-      }
-    </style>
-  </head>
-  <body class="bg-gray-200 dark:bg-gray-900 dark:text-white">
-    <div class="py-20 text-center text-black dark:text-white">
-      <h1 class="text-4xl">Wiimote for the Web</h1>
-      <h2>
-        A Wiimote implementation using
-        <a class="text-blue-600 hover:text-blue-900 underline" href="https://wicg.github.io/webhid/"
-          >WebHID API</a
-        >
-        by
-        <a
-          class="text-blue-600 hover:text-blue-900 underline"
-          href="https://twitter.com/KevinPicchi"
-          >@KevinPicchi</a
-        >
-      </h2>
-      <h2>
-        Check the source code on
-        <a
-          class="text-blue-600 hover:text-blue-900 underline pb-20"
-          href="https://github.com/PicchiKevin/wiimote-webhid"
-          >Github</a
-        >
-      </h2>
+    #miscMessageListBox {
+      overflow: auto;
+      height: 600px;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-200 dark:bg-gray-900 dark:text-white">
+  <div class="py-20 text-center text-black dark:text-white">
+    <h1 class="text-4xl">Wiimote for the Web</h1>
+    <h2>
+      A Wiimote implementation using
+      <a class="text-blue-600 hover:text-blue-900 underline" href="https://wicg.github.io/webhid/">WebHID API</a>.
+      Original project by
+      by
+      <a class="text-blue-600 hover:text-blue-900 underline" href="https://twitter.com/KevinPicchi">@KevinPicchi</a>,
+      fork by <a class="text-blue-600 hover:text-blue-900 underline" href="https://github.com/datkat21">@datkat21</a>
+    </h2>
+    <h2>
+      Check the source code on
+      <a class="text-blue-600 hover:text-blue-900 underline pb-20"
+        href="https://github.com/datkat21/wiimote-webhid">GitHub</a>.
+    </h2>
+  </div>
+
+  <div id="instructions"
+    class="max-w-4xl mx-auto px-8 py-4 bg-white dark:bg-gray-700 dark:text-white rounded-lg shadow-md">
+    <h1 class="my-4 font-big text-bold text-3xl">Setup</h1>
+    <p class="my-2">
+      Enable WebHID (enabled by default in newer versions of chrome, previously available from Chrome >85 by enabling the flag
+      #enable-experimental-web-platform-features at chrome://flags)
+    </p>
+    <p class="my-2">
+      Then, pair your Wiimote to your computer using Bluetooth (tap the red sync button that is hidden
+      under the back cover). If using Windows, use the Control Panel and not Settings (open control panel, then navigate to Devices and Printers).
+    </p>
+    <p class="my-2">Alright! Click the button below and have fun!</p>
+    <div class="flex justify-center items-center">
+      <button id="request-hid-device"
+        class="my-2 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none flex">
+        Connect new Wiimote
+      </button>
     </div>
+  </div>
 
-    <div
-      id="instructions"
-      class="max-w-4xl mx-auto px-8 py-4 bg-white dark:bg-gray-700 dark:text-white rounded-lg shadow-md"
-    >
-      <h1 class="my-4 font-big text-bold text-3xl">Step 1</h1>
-      <p class="my-2">
-        Enable WebHID (available from chrome 85 by enabling the flag
-        #enable-experimental-web-platform-features at chrome://flags)
-      </p>
-      <p class="my-2">
-        Then pair your Wiimote on your computer using Bluetooth (tap the sync button that is hidden
-        next to the battery)
-      </p>
-      <p class="my-2">Click button bellow and have fun!</p>
-      <div class="flex justify-center items-center">
-        <button
-          id="request-hid-device"
-          class="my-2 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none flex"
-        >
-          Connect new Wiimote
+  <div id="Controls" class="hidden">
+    <div class="mt-2 max-w-4xl mx-auto px-8 py-4 bg-white dark:bg-gray-700 rounded-lg shadow-md">
+      <h1 class="my-4 font-big text-bold text-3xl">Controls</h1>
+      <button id="rumble"
+        class="my-2 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none">
+        Toggle Rumbling
+      </button>
+      <h3 class="my-4 font-big text-2xl">LEDS</h3>
+      <div class="flex flex-wrap">
+        <button id="led1"
+          class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none">
+          Toggle LED 1
+        </button>
+        <button id="led2"
+          class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none">
+          Toggle LED 2
+        </button>
+        <button id="led3"
+          class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none">
+          Toggle LED 3
+        </button>
+        <button id="led4"
+          class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none">
+          Toggle LED 4
         </button>
       </div>
     </div>
 
-    <div id="Controls" class="hidden">
-      <div class="mt-2 max-w-4xl mx-auto px-8 py-4 bg-white dark:bg-gray-700 rounded-lg shadow-md">
-        <h1 class="my-4 font-big text-bold text-3xl">Controls</h1>
-        <button
-          id="rumble"
-          class="my-2 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none"
-        >
-          Toggle Rumbling
+    <div class="mt-2 max-w-4xl mx-auto px-8 py-4 bg-white dark:bg-gray-700 rounded-lg shadow-md">
+      <h3 class="my-4 font-big text-2xl">IR Settings</h3>
+      <div class="flex flex-wrap">
+        <button id="irbasic"
+          class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none">
+          Basic <span class="text-xs">(not fully supported)</span>
         </button>
-        <h3 class="my-4 font-big text-2xl">LEDS</h3>
-        <div class="flex flex-wrap">
-          <button
-            id="led1"
-            class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none"
-          >
-            Toggle LED 1
-          </button>
-          <button
-            id="led2"
-            class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none"
-          >
-            Toggle LED 2
-          </button>
-          <button
-            id="led3"
-            class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none"
-          >
-            Toggle LED 3
-          </button>
-          <button
-            id="led4"
-            class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none"
-          >
-            Toggle LED 4
-          </button>
-        </div>
+        <button id="irextended"
+          class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none">
+          Extended
+        </button>
+        <button id="irfull"
+          class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none">
+          FULL <span class="text-xs">(not fully supported)</span>
+        </button>
       </div>
 
-      <div class="mt-2 max-w-4xl mx-auto px-8 py-4 bg-white dark:bg-gray-700 rounded-lg shadow-md">
-        <h3 class="my-4 font-big text-2xl">IR Settings</h3>
-        <div class="flex flex-wrap">
-          <button
-            id="irbasic"
-            class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none"
-          >
-            Basic <span class="text-xs">(not fully supported)</span>
-          </button>
-          <button
-            id="irextended"
-            class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none"
-          >
-            Extended
-          </button>
-          <button
-            id="irfull"
-            class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none"
-          >
-            FULL <span class="text-xs">(not fully supported)</span>
-          </button>
-        </div>
-
-        <h3 class="my-4 font-big text-2xl">Data mode</h3>
-        <span>Currently active mode: <span class="font-mono text-xl text-gray-400" id="lastActiveMode"></span> (<span id="lastActiveModeName"></span>)</span>
-        <h4 class="mb-2 font-big text-xl">Basic</h4>
-        <div class="flex flex-wrap">
-          <button
-            id="DRMcoreBtns"
-            class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none"
-          >
-            Core Buttons <span class="text-xs font-mono text-gray-400">0x30</span>
-          </button>
-          <button
-            id="DRMcoreBtnsACC"
-            class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none"
-          >
-            Core Buttons + Accelerometer <span class="text-xs font-mono text-gray-400">0x31</span>
-          </button>
-          <button
-            id="DRMcoreBtnsACCIR"
-            class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none"
-          >
-            Core Buttons + Accelerometer + IR
-            <span class="text-xs font-mono text-gray-400">0x33</span>
-          </button>
-        </div>
-        <hr class="border-gray-500 border w-full" />
-        <h4 class="my-2 font-big text-xl">Extension</h4>
-        <div class="flex flex-wrap">
-          <button
-            id="DRMcoreBtnsACCIREXT"
-            class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none"
-          >
-            Core Buttons + Accelerometer + IR + Extension
-            <span class="text-xs font-mono text-gray-400">0x37</span>
-          </button>
-          <button
-            id="DRMextensionOnly"
-            class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none"
-          >
-            Extension Bytes Only <span class="text-xs font-mono text-gray-400">0x3D</span>
-          </button>
-        </div>
+      <h3 class="my-4 font-big text-2xl">Data mode</h3>
+      <span>Currently active mode: <span class="font-mono text-xl text-gray-400" id="lastActiveMode"></span> (<span
+          id="lastActiveModeName"></span>)</span>
+      <h4 class="mb-2 font-big text-xl">Basic</h4>
+      <div class="flex flex-wrap">
+        <button id="DRMcoreBtns"
+          class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none">
+          Core Buttons <span class="text-xs font-mono text-gray-400">0x30</span>
+        </button>
+        <button id="DRMcoreBtnsACC"
+          class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none">
+          Core Buttons + Accelerometer <span class="text-xs font-mono text-gray-400">0x31</span>
+        </button>
+        <button id="DRMcoreBtnsACCIR"
+          class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none">
+          Core Buttons + Accelerometer + IR
+          <span class="text-xs font-mono text-gray-400">0x33</span>
+        </button>
       </div>
-
-      <div
-        class="mt-2 max-w-4xl mx-auto px-8 py-4 bg-white dark:bg-gray-700 rounded-lg shadow-md flex justify-around"
-      >
-        <div>
-          <h3 class="my-4 font-big text-2xl">Buttons</h3>
-          <pre class="px-4 py-3 bg-gray-200 dark:bg-gray-800 rounded-lg" id="buttons"></pre>
-        </div>
-        <div>
-          <h3 class="my-4 font-big text-2xl">Accelerometer</h3>
-          <ul>
-            <li><b>X: </b> <span id="accX"></span></li>
-            <li><b>Y: </b> <span id="accY"></span></li>
-            <li><b>Z: </b> <span id="accZ"></span></li>
-          </ul>
-        </div>
+      <hr class="border-gray-500 border w-full" />
+      <h4 class="my-2 font-big text-xl">Extension</h4>
+      <div class="flex flex-wrap">
+        <button id="DRMcoreBtnsACCIREXT"
+          class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none">
+          Core Buttons + Accelerometer + IR + Extension
+          <span class="text-xs font-mono text-gray-400">0x37</span>
+        </button>
+        <button id="DRMextensionOnly"
+          class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none">
+          Extension Bytes Only <span class="text-xs font-mono text-gray-400">0x3D</span>
+        </button>
       </div>
+    </div>
 
-      <!-- <div
+    <div class="mt-2 max-w-4xl mx-auto px-8 py-4 bg-white dark:bg-gray-700 rounded-lg shadow-md flex justify-around">
+      <div>
+        <h3 class="my-4 font-big text-2xl">Buttons</h3>
+        <pre class="px-4 py-3 bg-gray-200 dark:bg-gray-800 rounded-lg" id="buttons"></pre>
+      </div>
+      <div>
+        <h3 class="my-4 font-big text-2xl">Accelerometer</h3>
+        <ul>
+          <li><b>X: </b> <span id="accX"></span></li>
+          <li><b>Y: </b> <span id="accY"></span></li>
+          <li><b>Z: </b> <span id="accZ"></span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- <div
         class="mt-2 max-w-4xl mx-auto px-8 py-4 bg-white dark:bg-gray-700 rounded-lg shadow-md align-center"
       >
         <h3>IR (canvas)</h3>
@@ -208,28 +172,22 @@
         <pre class="px-4 py-3 bg-gray-200 dark:bg-gray-800 rounded-lg" id="IRdebug"></pre>
       </div> -->
 
-      <div
-        class="mt-2 max-w-4xl mx-auto px-8 py-4 bg-white dark:bg-gray-700 rounded-lg shadow-md align-center"
-      >
-        <h3 class="mb-4 mt-2 font-big text-2xl">Data Packet info (in hex)</h3>
-        <pre class="px-4 py-3 bg-gray-200 dark:bg-gray-800 rounded-lg" id="DPdebugHex"></pre>
-      </div>
+    <div class="mt-2 max-w-4xl mx-auto px-8 py-4 bg-white dark:bg-gray-700 rounded-lg shadow-md align-center">
+      <h3 class="mb-4 mt-2 font-big text-2xl">Data Packet info (in hex)</h3>
+      <pre class="px-4 py-3 bg-gray-200 dark:bg-gray-800 rounded-lg" id="DPdebugHex"></pre>
+    </div>
 
-      <div
-        class="mt-2 max-w-4xl mx-auto px-8 py-4 bg-white dark:bg-gray-700 rounded-lg shadow-md align-center"
-      >
-        <h3 class="mb-4 mt-2 font-big text-2xl">Extension Mode</h3>
-        <span>Currently connected extension: <span id="extensionType"></span></span>
+    <div class="mt-2 max-w-4xl mx-auto px-8 py-4 bg-white dark:bg-gray-700 rounded-lg shadow-md align-center">
+      <h3 class="mb-4 mt-2 font-big text-2xl">Extension Mode</h3>
+      <span>Currently connected extension: <span id="extensionType"></span></span>
 
-        <button
-          id="getExtension"
-          class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none"
-        >
-          Get Extension
-        </button>
+      <button id="getExtension"
+        class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none">
+        Get Extension
+      </button>
 
-        <div id="extensionRender"></div>
-        <!-- <button
+      <div id="extensionRender"></div>
+      <!-- <button
                 id="extModeNone"
                 class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none"
               >
@@ -241,36 +199,32 @@
               >
                 Wii Motion Plus
               </button> -->
-      </div>
-
-      <div
-        class="mt-2 max-w-4xl mx-auto px-8 py-4 bg-white dark:bg-gray-700 rounded-lg shadow-md align-center"
-      >
-        <h3 class="my-4 font-big text-2xl">Status Report</h3>
-        <button
-          id="statusReport"
-          class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none"
-        >
-          Get SR
-        </button>
-        <pre class="px-4 py-3 bg-gray-200 dark:bg-gray-800 rounded-lg" id="statusReportInfo"></pre>
-
-        <span>Last tracked event ID: <span id="lastReportId"></span></span>
-
-        <details>
-          <summary>Event message tracker</summary>
-
-          <button
-            class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none"
-            id="clearEvents"
-          >
-            Clear events
-          </button>
-
-          <div id="miscMessageListBox"></div>
-        </details>
-      </div>
     </div>
-  </body>
-  <script type="module" src="index.js"></script>
+
+    <div class="mt-2 max-w-4xl mx-auto px-8 py-4 bg-white dark:bg-gray-700 rounded-lg shadow-md align-center">
+      <h3 class="my-4 font-big text-2xl">Status Report</h3>
+      <button id="statusReport"
+        class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none">
+        Get SR
+      </button>
+      <pre class="px-4 py-3 bg-gray-200 dark:bg-gray-800 rounded-lg" id="statusReportInfo"></pre>
+
+      <span>Last tracked event ID: <span id="lastReportId"></span></span>
+
+      <details>
+        <summary>Event message tracker</summary>
+
+        <button
+          class="my-2 mr-4 py-2 px-4 capitalize bg-blue-600 dark:bg-gray-900 text-white rounded hover:bg-blue-500 dark:hover:bg-gray-800 focus:outline-none"
+          id="clearEvents">
+          Clear events
+        </button>
+
+        <div id="miscMessageListBox"></div>
+      </details>
+    </div>
+  </div>
+</body>
+<script type="module" src="index.js"></script>
+
 </html>
